@@ -1,0 +1,24 @@
+{
+    "$schema": "https://json.schemastore.org/chrome-manifest.json",
+    "manifest_version": 3,
+    "version": "0.0.1",
+    "name": "drearycore",
+    "description": "extracts urls from bluesky alt text",
+    "icons": {
+        "48": "images/extension_48.png"
+    },
+    "permissions": ["activeTab", "scripting"],
+    "host_permissions": ["<all_urls>"],
+    "content_scripts": [
+        {
+            "matches": ["<all_urls>"],
+            "js": ["content/scripts.ts"]
+        }
+    ],
+    "author": "futur",
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "drearycore@futuristick.ca"
+        }
+    }
+}

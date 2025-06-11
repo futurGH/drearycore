@@ -1,0 +1,17 @@
+{
+    "private": true,
+    "name": "drearycore",
+    "description": "extracts urls from bluesky alt text",
+    "version": "0.0.1",
+    "devDependencies": {
+        "typescript": "5.3.3",
+        "extension": "^2.0.0-rc.36"
+    },
+    "type": "module",
+    "scripts": {
+        "dev": "extension dev",
+        "start": "extension start",
+        "build": "extension build"
+    },
+    "dependencies": {}
+}

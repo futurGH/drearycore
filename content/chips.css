@@ -1,0 +1,29 @@
+.willow__chips-container {
+  display: flex;
+  flex-flow: wrap;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.willow__chip {
+  display: inline-block;
+  padding: 0.35rem 0.5rem;
+  background-color: rgb(30, 41, 54);
+  border-radius: 9999px;
+  border: none;
+  transition: background-color 0.2s ease;
+
+  text-decoration: none;
+  color: rgb(147, 165, 183);
+  font-size: 0.75rem;
+  letter-spacing: 0.25px;
+  font-weight: 500;
+  line-height: 0.9375rem;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"
+
+}
+
+.willow__chip:hover {
+  background-color: rgb(30, 53, 68);
+  text-decoration: none;
+}
