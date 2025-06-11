@@ -82,10 +82,23 @@ function processPostElement(el: Element) {
         return;
     }
 
-    const thumbnailImg = [
+    const thumbnailImgs = [
         ...el.querySelectorAll<HTMLImageElement>('img[src*="feed_thumbnail"]'),
-    ].find((img) => !!img.alt);
+    ];
+    const thumbnailImg = thumbnailImgs.find((img) => !!img.alt);
     if (!thumbnailImg) {
+        const container = el.querySelector("div[data-expoimage='true']");
+        if (container) {
+            const observer = new MutationObserver(() => {
+                processPostElement(el);
+                observer.disconnect();
+            });
+            observer.observe(container, {
+                attributes: true,
+                childList: true,
+                subtree: true,
+            });
+        }
         return;
     }
 
@@ -140,8 +153,6 @@ async function injectChipsCSS() {
 function initializeExtension() {
     void injectChipsCSS();
 
-    scanForPosts();
-
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
             mutation.addedNodes.forEach((node) => {
@@ -167,9 +178,12 @@ function initializeExtension() {
     });
 
     observer.observe(document.body, {
+        attributes: true,
         childList: true,
         subtree: true,
     });
+
+    scanForPosts();
 
     return () => {
         observer.disconnect();

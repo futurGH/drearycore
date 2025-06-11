@@ -2,7 +2,7 @@
     "private": true,
     "name": "drearycore",
     "description": "extracts urls from bluesky alt text",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "devDependencies": {
         "typescript": "5.3.3",
         "extension": "^2.0.0-rc.36"
