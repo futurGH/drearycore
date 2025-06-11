@@ -82,10 +82,10 @@ function processPostElement(el: Element) {
         return;
     }
 
-    const thumbnailImg = el.querySelector(
-        'img[src*="img/feed_thumbnail"]',
-    ) as HTMLImageElement;
-    if (!thumbnailImg || !thumbnailImg.alt) {
+    const thumbnailImg = [
+        ...el.querySelectorAll<HTMLImageElement>('img[src*="feed_thumbnail"]'),
+    ].find((img) => !!img.alt);
+    if (!thumbnailImg) {
         return;
     }
 
