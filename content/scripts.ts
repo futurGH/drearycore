@@ -92,7 +92,7 @@ function processVideoElement(el: Element) {
     const altText = videoContainer.querySelector('figcaption')?.textContent
     if (!altText) return;
 
-    const urls = extractUrlsFromAlt(altText);
+    const urls = [...new Set(extractUrlsFromAlt(altText))];
     if (urls.length === 0) return;
 
     const chipsContainer = createChipsContainer(urls);
@@ -123,7 +123,7 @@ function processGIFElement(el: Element) {
     const altText = gif.getAttribute("aria-label")
     if (!altText) return;
 
-    const urls = extractUrlsFromAlt(altText);
+    const urls = [...new Set(extractUrlsFromAlt(altText))];
     if (urls.length === 0) return;
 
     const chipsContainer = createChipsContainer(urls);
