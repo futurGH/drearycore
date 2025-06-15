@@ -1,10 +1,7 @@
-const WATCHED_HANDLES =
-    process.env.EXTENSION_PUBLIC_WATCHED_HANDLES!?.split(",");
-if (!WATCHED_HANDLES) {
-    throw new Error(
-        "set WATCHED_HANDLES env var to comma-separated list of handles",
-    );
-}
+import browser from 'webextension-polyfill';
+
+
+let WATCHED_HANDLES: string[] = [];
 
 let unmount: () => void;
 
@@ -268,8 +265,20 @@ async function injectChipsCSS() {
     }
 }
 
-function initializeExtension() {
+async function getWatchedHandles(): Promise<string[]> {
+    const stored = await browser.storage.sync.get('handles');
+
+    const storedHandles = stored?.handles;
+    if (typeof storedHandles !== 'string') {
+        return [""];
+    }
+
+    return storedHandles.split("\n").map(h => h.trim()).filter(Boolean);
+}
+
+async function initializeExtension() {
     void injectChipsCSS();
+    WATCHED_HANDLES = await getWatchedHandles();
 
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
@@ -315,11 +324,15 @@ function initializeExtension() {
 
 if (isBlueskyLikeSite()) {
     if (document.readyState === "complete") {
-        unmount = initializeExtension() || (() => {});
+        initializeExtension().then((result) => {
+            unmount = result || (() => {});
+        });
     } else {
         document.addEventListener("readystatechange", () => {
             if (document.readyState === "complete") {
-                unmount = initializeExtension() || (() => {});
+                initializeExtension().then((result) => {
+                    unmount = result || (() => {});
+                });
             }
         });
     }
