@@ -65,23 +65,32 @@ function createChipsContainer(urls: string[]): HTMLElement {
     return container;
 }
 
-function processPostElement(el: Element) {
-    if ((el as HTMLElement).dataset.chipsInjected === "true") {
-        return;
+function processGIFElement(el: Element) {
+    const gif = el.querySelector<HTMLVideoElement>(
+        'video[src^="https://t.gifs.bsky.app/"][aria-label]'
+    );
+    if (!gif) return;
+
+    const urls = extractUrlsFromAlt(gif.getAttribute("aria-label")!);
+    if (urls.length === 0) return;
+
+    const chipsContainer = createChipsContainer(urls);
+
+    let insertionPoint: Element | null = gif?.parentElement;
+    while (
+        insertionPoint?.parentElement?.children.length === 1 &&
+        insertionPoint.parentElement.parentElement
+    ) {
+        insertionPoint = insertionPoint.parentElement;
     }
 
-    const testId = el.getAttribute("data-testid");
-    if (!testId) return;
-
-    const byIndex = testId.indexOf("by-");
-    if (byIndex === -1) return;
-
-    const handle = testId.substring(byIndex + 3);
-
-    if (!WATCHED_HANDLES.includes(handle)) {
-        return;
+    if (insertionPoint) {
+        insertionPoint.insertAdjacentElement("afterend", chipsContainer);
+        (el as HTMLElement).dataset.chipsInjected = "true";
     }
+}
 
+function processImageElement(el: Element) {
     const thumbnailImgs = [
         ...el.querySelectorAll<HTMLImageElement>('img[src*="feed_thumbnail"]'),
     ].filter((img) => !!img.alt);
@@ -137,6 +146,27 @@ function processPostElement(el: Element) {
         insertionPoint.insertAdjacentElement("afterend", chipsContainer);
         (el as HTMLElement).dataset.chipsInjected = "true";
     }
+}
+
+function processPostElement(el: Element) {
+    if ((el as HTMLElement).dataset.chipsInjected === "true") {
+        return;
+    }
+
+    const testId = el.getAttribute("data-testid");
+    if (!testId) return;
+
+    const byIndex = testId.indexOf("by-");
+    if (byIndex === -1) return;
+
+    const handle = testId.substring(byIndex + 3);
+
+    if (!WATCHED_HANDLES.includes(handle)) {
+        return;
+    }
+
+    processGIFElement(el);
+    processImageElement(el);
 }
 
 function scanForPosts() {
