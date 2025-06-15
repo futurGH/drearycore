@@ -66,9 +66,12 @@ function createChipsContainer(urls: string[]): HTMLElement {
 }
 
 function processGIFElement(el: Element) {
-    const gif = el.querySelector<HTMLVideoElement>(
+    const gif = [...el.querySelectorAll<HTMLVideoElement>(
         'video[src^="https://t.gifs.bsky.app/"][aria-label]'
-    );
+    )].find(g => {
+        const quoteContainer = g.closest('div[aria-label^="Post by "]');
+        return !quoteContainer || quoteContainer === el
+    });
     if (!gif) return;
 
     const urls = extractUrlsFromAlt(gif.getAttribute("aria-label")!);
@@ -93,7 +96,13 @@ function processGIFElement(el: Element) {
 function processImageElement(el: Element) {
     const thumbnailImgs = [
         ...el.querySelectorAll<HTMLImageElement>('img[src*="feed_thumbnail"]'),
-    ].filter((img) => !!img.alt);
+    ].filter(img => {
+            if (!img.alt) return false; 
+            const quoteContainer = img.closest('div[aria-label^="Post by "]')
+            return !quoteContainer || quoteContainer === el
+        }
+    );
+
     if (thumbnailImgs.length === 0) {
         const container = el.querySelector("div[data-expoimage='true']");
         if (container) {
@@ -148,18 +157,33 @@ function processImageElement(el: Element) {
     }
 }
 
+function extractHandle(el: Element): string | undefined {
+    const testId = el.getAttribute("data-testid");
+    if (testId) {
+        const byIndex = testId.indexOf("by-");
+        if (byIndex !== -1) {
+            return testId.substring(byIndex + 3);
+        }
+    }
+
+    const ariaLabel = el.getAttribute("aria-label");
+    if (ariaLabel) {
+        const postByIndex = ariaLabel.indexOf("Post by ");
+        if (postByIndex !== -1) {
+            return ariaLabel.substring(postByIndex + 8);
+        }
+    }
+
+    return undefined
+}
+
 function processPostElement(el: Element) {
     if ((el as HTMLElement).dataset.chipsInjected === "true") {
         return;
     }
 
-    const testId = el.getAttribute("data-testid");
-    if (!testId) return;
-
-    const byIndex = testId.indexOf("by-");
-    if (byIndex === -1) return;
-
-    const handle = testId.substring(byIndex + 3);
+    const handle = extractHandle(el);
+    if (!handle) return;
 
     if (!WATCHED_HANDLES.includes(handle)) {
         return;
@@ -171,7 +195,9 @@ function processPostElement(el: Element) {
 
 function scanForPosts() {
     const posts = document.querySelectorAll(
-        'div[data-testid^="feedItem-by-"], div[data-testid^="postThreadItem-by-"]',
+        'div[data-testid^="feedItem-by-"], ' +
+        'div[data-testid^="postThreadItem-by-"], ' +
+        'div[aria-label^="Post by "]'
     );
     posts.forEach(processPostElement);
 }
@@ -214,6 +240,11 @@ function initializeExtension() {
                         'div[data-testid^="feedItem-by-"], div[data-testid^="postThreadItem-by-"]',
                     );
                     childPosts.forEach(processPostElement);
+
+                    const quotePosts = element.querySelectorAll(
+                        'div[aria-label^="Post by "]'
+                    );
+                    quotePosts.forEach(processPostElement);
                 }
             });
         });
