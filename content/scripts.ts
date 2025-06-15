@@ -65,6 +65,52 @@ function createChipsContainer(urls: string[]): HTMLElement {
     return container;
 }
 
+function processVideoElement(el: Element) {
+    const videoContainer = [...el.querySelectorAll<HTMLElement>(
+        'div[aria-label="Embedded video player"]'
+    )].find(vid => {
+        const quoteContainer = vid.closest('div[aria-label^="Post by "]');
+        return !quoteContainer || quoteContainer === el
+    });
+
+    if (!videoContainer) {
+        const hasVideo = el.querySelector("div[style*='top: calc(50% - 50vh)']");
+        if (hasVideo) {
+            const observer = new MutationObserver(() => {
+                processVideoElement(el);
+                observer.disconnect();
+            });
+            observer.observe(el, {
+                attributes: true,
+                childList: true,
+                subtree: true,
+            });
+        }
+        return;
+    }
+
+    const altText = videoContainer.querySelector('figcaption')?.textContent
+    if (!altText) return;
+
+    const urls = extractUrlsFromAlt(altText);
+    if (urls.length === 0) return;
+
+    const chipsContainer = createChipsContainer(urls);
+
+    let insertionPoint: Element | null = videoContainer?.parentElement;
+    while (
+        insertionPoint?.parentElement?.children.length === 1 &&
+        insertionPoint.parentElement.parentElement
+    ) {
+        insertionPoint = insertionPoint.parentElement;
+    }
+
+    if (insertionPoint) {
+        insertionPoint.insertAdjacentElement("afterend", chipsContainer);
+        (el as HTMLElement).dataset.chipsInjected = "true";
+    }
+}
+
 function processGIFElement(el: Element) {
     const gif = [...el.querySelectorAll<HTMLVideoElement>(
         'video[src^="https://t.gifs.bsky.app/"][aria-label]'
@@ -74,7 +120,10 @@ function processGIFElement(el: Element) {
     });
     if (!gif) return;
 
-    const urls = extractUrlsFromAlt(gif.getAttribute("aria-label")!);
+    const altText = gif.getAttribute("aria-label")
+    if (!altText) return;
+
+    const urls = extractUrlsFromAlt(altText);
     if (urls.length === 0) return;
 
     const chipsContainer = createChipsContainer(urls);
@@ -191,6 +240,7 @@ function processPostElement(el: Element) {
 
     processGIFElement(el);
     processImageElement(el);
+    processVideoElement(el);
 }
 
 function scanForPosts() {
