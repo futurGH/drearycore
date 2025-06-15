@@ -1,7 +1,21 @@
-import browser from 'webextension-polyfill';
-
-
 let WATCHED_HANDLES: string[] = [];
+
+function updateWatchedHandles(): void {
+    chrome.storage.sync.get('handles', (stored) => {
+        const raw = stored?.handles;
+        WATCHED_HANDLES = typeof raw === 'string'
+            ? raw.split('\n').map(h => h.trim()).filter(Boolean)
+            : [];
+    });
+}
+
+updateWatchedHandles();
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'sync' && changes.handles) {
+        updateWatchedHandles();
+    }
+});
 
 let unmount: () => void;
 
@@ -265,20 +279,8 @@ async function injectChipsCSS() {
     }
 }
 
-async function getWatchedHandles(): Promise<string[]> {
-    const stored = await browser.storage.sync.get('handles');
-
-    const storedHandles = stored?.handles;
-    if (typeof storedHandles !== 'string') {
-        return [""];
-    }
-
-    return storedHandles.split("\n").map(h => h.trim()).filter(Boolean);
-}
-
-async function initializeExtension() {
+function initializeExtension() {
     void injectChipsCSS();
-    WATCHED_HANDLES = await getWatchedHandles();
 
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
@@ -324,15 +326,11 @@ async function initializeExtension() {
 
 if (isBlueskyLikeSite()) {
     if (document.readyState === "complete") {
-        initializeExtension().then((result) => {
-            unmount = result || (() => {});
-        });
+        unmount = initializeExtension() || (() => {});
     } else {
         document.addEventListener("readystatechange", () => {
             if (document.readyState === "complete") {
-                initializeExtension().then((result) => {
-                    unmount = result || (() => {});
-                });
+                unmount = initializeExtension() || (() => {});
             }
         });
     }
