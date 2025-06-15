@@ -84,9 +84,8 @@ function processPostElement(el: Element) {
 
     const thumbnailImgs = [
         ...el.querySelectorAll<HTMLImageElement>('img[src*="feed_thumbnail"]'),
-    ];
-    const thumbnailImg = thumbnailImgs.find((img) => !!img.alt);
-    if (!thumbnailImg) {
+    ].filter((img) => !!img.alt);
+    if (thumbnailImgs.length === 0) {
         const container = el.querySelector("div[data-expoimage='true']");
         if (container) {
             const observer = new MutationObserver(() => {
@@ -102,16 +101,29 @@ function processPostElement(el: Element) {
         return;
     }
 
-    const urls = extractUrlsFromAlt(thumbnailImg.alt);
+    const urls = [...new Set(
+        thumbnailImgs.flatMap(img => extractUrlsFromAlt(img.alt))
+    )];
     if (urls.length === 0) {
         return;
     }
 
     const chipsContainer = createChipsContainer(urls);
 
-    const imageContainer = thumbnailImg.closest(
-        `div[aria-label*="${urls[0]}"]`,
-    );
+    let imageContainer: Element | null = null
+    for (const thumbnailImg of thumbnailImgs) {
+        imageContainer = thumbnailImg.closest(
+            `div[aria-label*="${urls[0]}"]`,
+        );
+        if (!imageContainer) {
+            imageContainer = thumbnailImg.closest(
+                `button[aria-label*="${urls[0]}"]`,
+            )?.parentElement?.parentElement?.parentElement ?? null;
+        };
+        if (imageContainer) {
+            break
+        };
+    }
 
     let insertionPoint: Element | null = imageContainer;
     while (
