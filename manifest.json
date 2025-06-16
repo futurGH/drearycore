@@ -7,7 +7,7 @@
     "icons": {
         "48": "images/extension_48.png"
     },
-    "permissions": ["activeTab", "scripting"],
+    "permissions": ["activeTab", "scripting", "storage"],
     "host_permissions": ["<all_urls>"],
     "content_scripts": [
         {
@@ -20,5 +20,8 @@
         "gecko": {
             "id": "drearycore@futuristick.ca"
         }
+    },
+    "options_ui": {
+        "page": "options/index.html"
     }
 }

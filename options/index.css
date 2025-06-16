@@ -1,0 +1,40 @@
+html {
+    display: flex;
+    flex-direction: column;
+    background-color: #2C2C2C;
+    padding: 20px;
+}
+
+#main {
+    color: white;
+    font-family: sans-serif;
+}
+
+textarea {
+    width: 100%;
+    min-height: 80px;
+    resize: vertical;
+    background-color: #1E1E1E;
+    color: #FFFFFF;
+    border: 1px solid #555;
+    font-size: 14px;
+}
+
+button {
+    background-color: #444;
+    color: #FFF;
+    border: 1px solid #666;
+    font-size: 14px;
+}
+
+button:hover {
+    background-color: #555;
+}
+
+.buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
