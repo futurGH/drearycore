@@ -1,7 +1,7 @@
 let WATCHED_HANDLES: string[] = [];
 
 function updateWatchedHandles(): void {
-    chrome.storage.sync.get('handles', (stored) => {
+    chrome.storage.sync.get("handles", (stored) => {
         const raw = stored?.handles;
         WATCHED_HANDLES = typeof raw === 'string'
             ? raw.split('\n').map(h => h.trim()).filter(Boolean)
@@ -12,7 +12,7 @@ function updateWatchedHandles(): void {
 updateWatchedHandles();
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName === 'sync' && changes.handles) {
+    if (areaName === "sync" && changes.handles) {
         updateWatchedHandles();
     }
 });
@@ -39,7 +39,7 @@ function extractUrlsFromAlt(alt: string): string[] {
     return alt.match(urlRegex) || [];
 }
 
-function createChipsContainer(urls: string[]): HTMLElement {
+function createChipsContainer(urls: string[]): HTMLDivElement {
     const container = document.createElement("div");
     container.className = "willow__chips-container";
 
@@ -76,12 +76,33 @@ function createChipsContainer(urls: string[]): HTMLElement {
     return container;
 }
 
+function insertChipsContainer(
+    el: Element,
+    insertionPoint: Element | null,
+    chipsContainer: HTMLDivElement,
+) {
+    while (
+        (insertionPoint?.parentElement?.children.length === 1 &&
+            insertionPoint.parentElement.parentElement) ||
+        insertionPoint?.parentElement?.style?.flexDirection === "row"
+        ) {
+        insertionPoint = insertionPoint.parentElement;
+    }
+
+    if (insertionPoint) {
+        insertionPoint.insertAdjacentElement("afterend", chipsContainer);
+        (el as HTMLElement).dataset.chipsInjected = "true";
+    }
+}
+
 function processVideoElement(el: Element) {
-    const videoContainer = [...el.querySelectorAll<HTMLElement>(
-        'div[aria-label="Embedded video player"]'
-    )].find(vid => {
+    const videoContainer = [
+        ...el.querySelectorAll<HTMLElement>(
+            'div[aria-label="Embedded video player"]',
+        ),
+    ].find((vid) => {
         const quoteContainer = vid.closest('div[aria-label^="Post by "]');
-        return !quoteContainer || quoteContainer === el
+        return !quoteContainer || quoteContainer === el;
     });
 
     if (!videoContainer) {
@@ -100,68 +121,47 @@ function processVideoElement(el: Element) {
         return;
     }
 
-    const altText = videoContainer.querySelector('figcaption')?.textContent
+    const altText = videoContainer.querySelector("figcaption")?.textContent;
     if (!altText) return;
 
     const urls = [...new Set(extractUrlsFromAlt(altText))];
     if (urls.length === 0) return;
 
-    const chipsContainer = createChipsContainer(urls);
-
-    let insertionPoint: Element | null = videoContainer?.parentElement;
-    while (
-        insertionPoint?.parentElement?.children.length === 1 &&
-        insertionPoint.parentElement.parentElement
-    ) {
-        insertionPoint = insertionPoint.parentElement;
-    }
-
-    if (insertionPoint) {
-        insertionPoint.insertAdjacentElement("afterend", chipsContainer);
-        (el as HTMLElement).dataset.chipsInjected = "true";
-    }
+    insertChipsContainer(
+        el,
+        videoContainer?.parentElement,
+        createChipsContainer(urls),
+    );
 }
 
 function processGIFElement(el: Element) {
-    const gif = [...el.querySelectorAll<HTMLVideoElement>(
-        'video[src^="https://t.gifs.bsky.app/"][aria-label]'
-    )].find(g => {
+    const gif = [
+        ...el.querySelectorAll<HTMLVideoElement>(
+            'video[src^="https://t.gifs.bsky.app/"][aria-label]',
+        ),
+    ].find((g) => {
         const quoteContainer = g.closest('div[aria-label^="Post by "]');
-        return !quoteContainer || quoteContainer === el
+        return !quoteContainer || quoteContainer === el;
     });
     if (!gif) return;
 
-    const altText = gif.getAttribute("aria-label")
+    const altText = gif.getAttribute("aria-label");
     if (!altText) return;
 
     const urls = [...new Set(extractUrlsFromAlt(altText))];
     if (urls.length === 0) return;
 
-    const chipsContainer = createChipsContainer(urls);
-
-    let insertionPoint: Element | null = gif?.parentElement;
-    while (
-        insertionPoint?.parentElement?.children.length === 1 &&
-        insertionPoint.parentElement.parentElement
-    ) {
-        insertionPoint = insertionPoint.parentElement;
-    }
-
-    if (insertionPoint) {
-        insertionPoint.insertAdjacentElement("afterend", chipsContainer);
-        (el as HTMLElement).dataset.chipsInjected = "true";
-    }
+    insertChipsContainer(el, gif?.parentElement, createChipsContainer(urls));
 }
 
 function processImageElement(el: Element) {
     const thumbnailImgs = [
         ...el.querySelectorAll<HTMLImageElement>('img[src*="feed_thumbnail"]'),
-    ].filter(img => {
-            if (!img.alt) return false; 
-            const quoteContainer = img.closest('div[aria-label^="Post by "]')
-            return !quoteContainer || quoteContainer === el
-        }
-    );
+    ].filter((img) => {
+        if (!img.alt) return false;
+        const quoteContainer = img.closest('div[aria-label^="Post by "]');
+        return !quoteContainer || quoteContainer === el;
+    });
 
     if (thumbnailImgs.length === 0) {
         const container = el.querySelector("div[data-expoimage='true']");
@@ -179,42 +179,27 @@ function processImageElement(el: Element) {
         return;
     }
 
-    const urls = [...new Set(
-        thumbnailImgs.flatMap(img => extractUrlsFromAlt(img.alt))
-    )];
+    const urls = [
+        ...new Set(thumbnailImgs.flatMap((img) => extractUrlsFromAlt(img.alt))),
+    ];
     if (urls.length === 0) {
         return;
     }
 
-    const chipsContainer = createChipsContainer(urls);
-
-    let imageContainer: Element | null = null
+    let imageContainer: Element | null = null;
     for (const thumbnailImg of thumbnailImgs) {
-        imageContainer = thumbnailImg.closest(
-            `div[aria-label*="${urls[0]}"]`,
-        );
+        imageContainer = thumbnailImg.closest(`div[aria-label*="${urls[0]}"]`);
         if (!imageContainer) {
-            imageContainer = thumbnailImg.closest(
-                `button[aria-label*="${urls[0]}"]`,
-            )?.parentElement?.parentElement?.parentElement ?? null;
-        };
+            imageContainer =
+                thumbnailImg.closest(`button[aria-label*="${urls[0]}"]`)?.parentElement
+                    ?.parentElement?.parentElement ?? null;
+        }
         if (imageContainer) {
-            break
-        };
+            break;
+        }
     }
 
-    let insertionPoint: Element | null = imageContainer;
-    while (
-        insertionPoint?.parentElement?.children.length === 1 &&
-        insertionPoint.parentElement.parentElement
-    ) {
-        insertionPoint = insertionPoint.parentElement;
-    }
-
-    if (insertionPoint) {
-        insertionPoint.insertAdjacentElement("afterend", chipsContainer);
-        (el as HTMLElement).dataset.chipsInjected = "true";
-    }
+    insertChipsContainer(el, imageContainer, createChipsContainer(urls));
 }
 
 function extractHandle(el: Element): string | undefined {
@@ -233,8 +218,6 @@ function extractHandle(el: Element): string | undefined {
             return ariaLabel.substring(postByIndex + 8);
         }
     }
-
-    return undefined
 }
 
 function processPostElement(el: Element) {
@@ -258,7 +241,7 @@ function scanForPosts() {
     const posts = document.querySelectorAll(
         'div[data-testid^="feedItem-by-"], ' +
         'div[data-testid^="postThreadItem-by-"], ' +
-        'div[aria-label^="Post by "]'
+        'div[aria-label^="Post by "]',
     );
     posts.forEach(processPostElement);
 }
@@ -303,7 +286,7 @@ function initializeExtension() {
                     childPosts.forEach(processPostElement);
 
                     const quotePosts = element.querySelectorAll(
-                        'div[aria-label^="Post by "]'
+                        'div[aria-label^="Post by "]',
                     );
                     quotePosts.forEach(processPostElement);
                 }
